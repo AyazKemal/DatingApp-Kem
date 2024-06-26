@@ -89,7 +89,9 @@
           </div>
         </form>
       </tab>
-      <tab heading="Edit Photos"> Photo Edit will go here </tab>
+      <tab heading="Edit Photos">
+      <app-photo-editor [member]="member" (memberChange)="$event"></app-photo-editor>  
+      </tab>
     </tabset>
   </div>
 </div>

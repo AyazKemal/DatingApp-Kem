@@ -7,3 +7,9 @@ a{
   text-decoration: none;
   cursor: pointer;
 }
+
+img{
+  max-height: 2.5rem;
+  border: 2px solid white;
+  display: inline;
+}
