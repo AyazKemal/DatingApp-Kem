@@ -24,7 +24,7 @@
     @if (accountService.curentUser()) {
     <div dropdown class="dropdown">
       <img class="me-2" src="{{accountService.curentUser()?.photoUrl || './assets/user.png'}}" alt="user main image">
-      <a dropdownToggle class="dropdown-toggle text-light">Wellcome {{accountService.curentUser()?.username | titlecase}}</a>
+      <a dropdownToggle class="dropdown-toggle text-light">Wellcome {{accountService.curentUser()?.knownAs}}</a>
       <ul *dropdownMenu class="dropdown-menu">
         <li class="nav-item"><a class="dropdown-item" routerLink="/member/edit">Edit Profile</a></li>
         <div class="dropdown-divider"></div>

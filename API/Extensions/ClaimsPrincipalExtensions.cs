@@ -8,7 +8,7 @@ public static class ClaimsPrincipalExtensions
   // The null coalesing operator (??) is used in this example
   public static string GetUsername(this ClaimsPrincipal user)
   {
-    var username = user.FindFirstValue(ClaimTypes.NameIdentifier)
+    var username = user.FindFirstValue(ClaimTypes.Name)
             ?? throw new Exception("Cannot get username from token");
 
     return username;
