@@ -6,7 +6,7 @@ using API.Helpers;
 using API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API;
+namespace API.Controllers;
 
 public class LikesController(ILikesRepository likesRepository) : BaseApiController
 {
