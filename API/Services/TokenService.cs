@@ -3,36 +3,43 @@ using System.Security.Claims;
 using System.Text;
 using API.Entities;
 using API.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 namespace API.Services;
 
-public class TokenService(IConfiguration config) : ITokenService
+public class TokenService(IConfiguration config, UserManager<AppUser> userManager) : ITokenService
 {
-    public string CreateToken(AppUser user)
-    {
-        var tokenKey = config["TokenKey"] ?? throw new Exception("Can not access token key from appsettings");
+  public async Task<string> CreateToken(AppUser user)
+  {
+    var tokenKey = config["TokenKey"] ?? throw new Exception("Can not access token key from appsettings");
 
-        if(tokenKey.Length < 64) throw new Exception("Your token key needs to longer");
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+    if (tokenKey.Length < 64) throw new Exception("Your token key needs to longer");
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
 
-        var claims = new List<Claim>
+    if (user.UserName == null) throw new Exception("No username for user");
+
+    var claims = new List<Claim>
         {
           new(ClaimTypes.NameIdentifier, user.Id.ToString()),
           new(ClaimTypes.Name, user.UserName)
         };
 
-var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-        var tokenDescriptor = new SecurityTokenDescriptor()
-        {
-          Subject = new ClaimsIdentity(claims),
-          Expires = DateTime.UtcNow.AddDays(7),
-          SigningCredentials = creds
-        };
+    var roles = await userManager.GetRolesAsync(user);
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var token = tokenHandler.CreateToken(tokenDescriptor);
+    claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        return tokenHandler.WriteToken(token);
-    }
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+    var tokenDescriptor = new SecurityTokenDescriptor()
+    {
+      Subject = new ClaimsIdentity(claims),
+      Expires = DateTime.UtcNow.AddDays(7),
+      SigningCredentials = creds
+    };
+
+    var tokenHandler = new JwtSecurityTokenHandler();
+    var token = tokenHandler.CreateToken(tokenDescriptor);
+
+    return tokenHandler.WriteToken(token);
+  }
 }
