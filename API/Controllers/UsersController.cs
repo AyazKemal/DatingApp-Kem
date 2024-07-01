@@ -15,7 +15,7 @@ public class UsersController(IUnitOfWork unitOfWork, IMapper mapper, IPhotoServi
 {
 
   [HttpGet]
-  public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery]UserParams userParams)
+  public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery] UserParams userParams)
   {
     userParams.CurrentUsername = User.GetUsername();
     var users = await unitOfWork.UserRepository.GetMembersAsync(userParams);
@@ -29,7 +29,8 @@ public class UsersController(IUnitOfWork unitOfWork, IMapper mapper, IPhotoServi
   [HttpGet("{username}")]
   public async Task<ActionResult<MemberDto>> GetUser(string username)
   {
-    var user = await unitOfWork.UserRepository.GetMemberAsync(username);
+    var currentUsername = User.GetUsername();
+    var user = await unitOfWork.UserRepository.GetMemberAsync(username, isCurrentUser: currentUsername == username);
 
     if (user == null) return NotFound();
 
@@ -69,11 +70,11 @@ public class UsersController(IUnitOfWork unitOfWork, IMapper mapper, IPhotoServi
       PublicId = result.PublicId
     };
 
-    if (user.Photos.Count == 0) photo.IsMain = true;
+    // if (user.Photos.Count == 0) photo.IsMain = true;
 
     user.Photos.Add(photo);
 
-    if(await unitOfWork.Complete())
+    if (await unitOfWork.Complete())
       return CreatedAtAction(nameof(GetUser), new { username = user.UserName },
           mapper.Map<PhotoDto>(photo));
 
@@ -83,7 +84,7 @@ public class UsersController(IUnitOfWork unitOfWork, IMapper mapper, IPhotoServi
   [HttpPut("set-main-photo/{photoId:int}")]
   public async Task<ActionResult> SetMainPhoto(int photoId)
   {
-   var user = await unitOfWork.UserRepository.GetUserByNameAsync(User.GetUsername());
+    var user = await unitOfWork.UserRepository.GetUserByNameAsync(User.GetUsername());
 
     if (user == null) return BadRequest("Could not find user");
 
@@ -105,26 +106,18 @@ public class UsersController(IUnitOfWork unitOfWork, IMapper mapper, IPhotoServi
   [HttpDelete("delete-photo/{photoId:int}")]
   public async Task<ActionResult> DeletePhoto(int photoId)
   {
-     var user = await unitOfWork.UserRepository.GetUserByNameAsync(User.GetUsername());
-
-    if (user == null) return BadRequest("Could not find user");
-
-    var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
-
-    if (photo == null) return NotFound();
-
-    if (photo.IsMain) return BadRequest("You cannot delete your main photo");
-
+    var user = await
+   unitOfWork.UserRepository.GetUserByNameAsync(User.GetUsername());
+    if (user == null) return BadRequest("User not found");
+    var photo = await unitOfWork.PhotoRepository.GetPhotoById(photoId);
+    if (photo == null || photo.IsMain) return BadRequest("This photo cannot be deleted");
     if (photo.PublicId != null)
     {
       var result = await photoService.DeletePhotoAsync(photo.PublicId);
       if (result.Error != null) return BadRequest(result.Error.Message);
     }
-
     user.Photos.Remove(photo);
-
     if (await unitOfWork.Complete()) return Ok();
-
     return BadRequest("Problem deleting photo");
   }
 }
