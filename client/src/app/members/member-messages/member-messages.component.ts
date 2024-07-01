@@ -22,6 +22,7 @@ export class MemberMessagesComponent{
     this.loading = true;
     this.messageService.sendMessage(this.username(), this.messageContent).then(() => {
       this.messageForm?.reset();
+      this.scrollToBottom();
     })
 }
 
